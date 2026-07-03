@@ -12,24 +12,20 @@ import java.util.Random;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class EmailOtpService {
 
-    @Autowired
-    private JavaMailSender mailSender;
-
+    private final SendGrid sendGrid;
     private final Random random = new Random();
 
-    public String sendOtp(String toEmail, String username) throws MessagingException {
+    @Value("${spring.sendgrid.from-email}")
+    private String fromEmail;
+
+    public String sendOtp(String toEmail, String username) throws IOException {
         String otp = String.format("%06d", random.nextInt(1000000));
-        log.info("OTP: {}", otp);
+        log.info("OTP generated for {}: {}", username, otp);
 
-        log.info("Username: {}", username);
-
-        MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-
-        helper.setTo(toEmail);
-        helper.setSubject("SwapKart OTP Verification for Registration");
+        String subject = "SwapKart OTP Verification for Registration";
 
         String htmlContent = "<!DOCTYPE html>\n" +
                 "<html lang=\"en\">\n" +
@@ -70,7 +66,7 @@ public class EmailOtpService {
                 "        <table style=\"width: 100%; border-collapse: collapse;\">\n" +
                 "          <tbody>\n" +
                 "            <tr style=\"height: 0;\">\n" +
-                "              <td \"text-align: right; vertical-align: middle;\">\n" +
+                "              <td style=\"text-align: left; vertical-align: middle;\">\n" +
                 "                <img\n" +
                 "                 alt=\"Swapkart Logo\"\n" +
                 "                 src=\"https://raw.githubusercontent.com/RethishDev/swapkart-assets/main/swapkart-logo.png\"\n" +
@@ -81,7 +77,7 @@ public class EmailOtpService {
                 "                   height: auto;\n" +
                 "                   margin: 10px 0 10px 10px;\n" +
                 "                 \"\n" +
-                "               />\n" +
+                "                />\n" +
                 "              </td>\n" +
                 "              <td style=\"text-align: right;\">\n" +
                 "                <span\n" +
@@ -206,9 +202,30 @@ public class EmailOtpService {
                 "  </body>\n" +
                 "</html>\n";
 
-        helper.setText(htmlContent, true); // true indicates HTML content
+        // Building the SendGrid Mail Request Object
+        Email from = new Email(fromEmail);
+        Email to = new Email(toEmail);
+        Content content = new Content("text/html", htmlContent); // Essential: flag it as text/html
+        Mail mail = new Mail(from, subject, to, content);
 
-        mailSender.send(message);
+        Request request = new Request();
+        try {
+            request.setMethod(Method.POST);
+            request.setEndpoint("mail/send");
+            request.setBody(mail.build());
+            
+            Response response = sendGrid.api(request);
+            log.info("SendGrid API Response Status Code: {}", response.getStatusCode());
+            
+            if (response.getStatusCode() >= 400) {
+                log.error("SendGrid failed to dispatch email. Body: {}", response.getBody());
+                throw new IOException("Email delivery failure via SendGrid API");
+            }
+        } catch (IOException ex) {
+            log.error("Exception thrown while connecting to SendGrid API", ex);
+            throw ex;
+        }
+
         return otp;
     }
 }
