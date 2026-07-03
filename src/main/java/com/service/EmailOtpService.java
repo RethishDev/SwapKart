@@ -207,6 +207,7 @@ public class EmailOtpService {
                 "  </body>\n" +
                 "</html>\n";
 
+        log.info("Email initiated....");
         // Building the SendGrid Mail Request Object
         Email from = new Email(fromEmail);
         Email to = new Email(toEmail);
@@ -215,6 +216,7 @@ public class EmailOtpService {
 
         Request request = new Request();
         try {
+            log.info("Sending Email....");
             request.setMethod(Method.POST);
             request.setEndpoint("mail/send");
             request.setBody(mail.build());
