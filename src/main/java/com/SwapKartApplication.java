@@ -11,7 +11,7 @@ public class SwapKartApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(SwapKartApplication.class, args);
 
-		System.out.println("Developer: Aiswarya Sunil");
+		System.out.println("Developer: Resthish Kumar");
 	}
 
 }

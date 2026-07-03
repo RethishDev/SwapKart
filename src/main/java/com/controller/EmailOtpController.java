@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -24,7 +25,7 @@ public class EmailOtpController {
     // Send OTP (accepts both JSON body or form params)
     @PostMapping("/send-otp")
     public ResponseEntity<String> sendOtp(@RequestBody(required = false) Map<String, String> body,
-                                          @RequestParam(required = false) String email) throws MessagingException {
+                                          @RequestParam(required = false) String email) throws MessagingException, IOException {
         // Handle both frontend (JSON) and Postman (query param)
         if (body != null && body.containsKey("email")) {
             email = body.get("email");
