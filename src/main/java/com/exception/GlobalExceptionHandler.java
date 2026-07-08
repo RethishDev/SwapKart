@@ -1,6 +1,5 @@
 package com.exception;
 
-import com.exception.ResourceNotFoundException;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -9,20 +8,22 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartException;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
 @Slf4j
+@ControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
@@ -89,11 +90,17 @@ public class GlobalExceptionHandler {
         );
     }
 
+    // Catch specific file size limit errors
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<?> handleMaxSizeException(MaxUploadSizeExceededException exc) {
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+                .body(Collections.singletonMap("error", "File size limit exceeded. Please ensure no single image is larger than 5MB and total size is under 25MB."));
+    }
+
     @ExceptionHandler(MultipartException.class)
-    public ResponseEntity<?> handleMultipartError(MultipartException ex) {
-        log.error("Multipart error: {}", ex.getMessage());
+    public ResponseEntity<?> handleMultipartException(MultipartException exc) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of("error", "File too large or invalid multipart data"));
+                .body(Collections.singletonMap("error", "Failed to process the uploaded images. Please try again with smaller files."));
     }
 
 

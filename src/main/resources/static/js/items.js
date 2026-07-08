@@ -772,11 +772,6 @@
         const sellerId = item.seller?.id || item.sellerId;
         const isOwner = currentUserId && currentUserId === sellerId;
 
-        if (isOwner) {
-            alert('You cannot message yourself');
-            return;
-        }
-
         // Update the message seller button in the modal
         const messageSellerBtn = document.getElementById('messageSellerBtn');
         if (messageSellerBtn) {

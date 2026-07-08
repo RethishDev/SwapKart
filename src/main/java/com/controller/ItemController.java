@@ -54,7 +54,7 @@ public class ItemController {
 
 
     ) {
-        System.out.println("Images received: " + images.length);
+        log.info("Images received: {}", images.length);
         for (MultipartFile img : images) {
             System.out.println(" - " + img.getOriginalFilename());
         }
@@ -64,6 +64,7 @@ public class ItemController {
             String userEmail = authentication.getName();
 
             if (userEmail == null || userEmail.isEmpty()) {
+                log.info("User not authenticated");
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(Collections.singletonMap("error", "User not authenticated"));
             }
@@ -100,6 +101,7 @@ public class ItemController {
             return new ResponseEntity<>(item, HttpStatus.CREATED);
 
         } catch (Exception e) {
+            log.info("Failed to upload: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Collections.singletonMap("error", e.getMessage()));
         }

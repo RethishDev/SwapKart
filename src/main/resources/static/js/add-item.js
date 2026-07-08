@@ -70,21 +70,37 @@ document.addEventListener('DOMContentLoaded', function() {
         return /^\d{6}$/.test(pincode);
     }
 
-    // Handle image preview
+    // Handle image preview and validation
     imageInput.addEventListener('change', function(e) {
         imagePreview.innerHTML = '';
-        imageFiles = Array.from(e.target.files).slice(0, 5); // Limit to 5 images
 
-        if (imageFiles.length === 0) {
+        // 1. Limit to 5 images
+        const selectedFiles = Array.from(e.target.files);
+        if (selectedFiles.length > 5) {
+            showError('Too Many Images', 'You can only upload a maximum of 5 images.');
+            imageInput.value = ''; // Clear the input
             return;
         }
 
-        imageFiles.forEach(file => {
+        imageFiles = []; // Reset the array
+        const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
+
+        for (let file of selectedFiles) {
+            // 2. Validate file type
             if (!file.type.startsWith('image/')) {
-                showError('Invalid File Type', 'Only image files are allowed');
-                return;
+                showError('Invalid File Type', `File "${file.name}" is not an image.`);
+                continue; // Skip this file
             }
 
+            // 3. Validate file size (5MB limit per file)
+            if (file.size > MAX_FILE_SIZE) {
+                showError('File Too Large', `Image "${file.name}" exceeds the 5MB limit.`);
+                continue; // Skip this file
+            }
+
+            imageFiles.push(file);
+
+            // Preview valid images
             const reader = new FileReader();
             reader.onload = function(e) {
                 const img = document.createElement('img');
@@ -93,7 +109,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 imagePreview.appendChild(img);
             };
             reader.readAsDataURL(file);
-        });
+        }
     });
 
     // Handle form submission
@@ -176,7 +192,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const result = await response.json();
 
                 if (!response.ok) {
-                    throw new Error(result.message || 'Failed to add item');
+                    // 4. Check for 'error' key specifically, as your backend returns {"error": "..."}
+                    throw new Error(result.error || result.message || 'Failed to add item');
                 }
 
                 await loading.close();
@@ -186,7 +203,8 @@ document.addEventListener('DOMContentLoaded', function() {
             } catch (error) {
                 console.error('Error:', error);
                 await loading.close();
-                await showError('Error', error.message || 'Failed to add item. Please try again.');
+                // Now displays the user-readable message from the GlobalExceptionHandler
+                await showError('Upload Failed', error.message);
             }
         });
     }
