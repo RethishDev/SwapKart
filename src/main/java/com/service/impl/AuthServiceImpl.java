@@ -13,6 +13,7 @@ import com.service.JwtService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -28,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Date;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
@@ -146,6 +148,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void sendPasswordResetEmail(String email) {
+        log.info("sendingPassword");
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
 
@@ -153,7 +156,7 @@ public class AuthServiceImpl implements AuthService {
         //String resetLink = "http://localhost:8081/reset-password?token=" + token;
 
         // reset password link for dev tunnel - swapkart online
-        String resetLink = "https://2xh3bj16-8903.inc1.devtunnels.ms/reset-password?token=" + token;
+        String resetLink = "https://swapkart-f1k7.onrender.com/reset-password?token=" + token;
 
         String subject = "Password Reset Request";
         String body = "Please click the link below to reset your password:\n\n" + resetLink;
