@@ -48,7 +48,7 @@ public class ItemService {
     private String uploadDir;
 
     @Transactional
-    public Item addItem(ItemRequest request, MultipartFile[] images) {
+    public Item addItem(ItemRequest request, List<String> imageUrls) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepo.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
@@ -72,6 +72,7 @@ public class ItemService {
                 .itemCondition(request.getCondition())
                 .user(user)
                 .active("true")
+                .imageUrls(imageUrls)
                 .build();
 
         // Ensure status is not null
@@ -79,49 +80,49 @@ public class ItemService {
             item.setStatus(ItemStatus.AVAILABLE);
         }
 
-        if (images != null && images.length > 0) {
-            try {
-                final int MAX_IMAGES = 5;
-                Path uploadPath = Paths.get(uploadDir);
-                Files.createDirectories(uploadPath); // Ensure directory exists
-
-                List<String> savedUrls = new java.util.ArrayList<>();
-                int count = 0;
-
-                for (MultipartFile img : images) {
-                    if (img == null || img.isEmpty()) continue;
-                    if (count >= MAX_IMAGES) break;
-
-                    // Clean original filename
-                    String original = img.getOriginalFilename();
-                    String ext = "";
-                    if (original != null && original.contains(".")) {
-                        ext = original.substring(original.lastIndexOf("."));
-                    }
-
-                    // Unique safe filename
-                    String fileName = UUID.randomUUID().toString().replace("-", "") + ext;
-                    Path filePath = uploadPath.resolve(fileName);
-
-                    // Save file safely (overwrite only same UUID, which never happens)
-                    Files.copy(img.getInputStream(), filePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-
-                    log.info("Uploaded file: {} ({} bytes)", fileName, img.getSize());
-
-                    // Construct accessible URL
-                    savedUrls.add("/uploads/items/" + fileName);
-                    count++;
-                }
-
-                if (!savedUrls.isEmpty()) {
-                    item.setImageUrls(savedUrls);
-                }
-
-            } catch (IOException e) {
-                log.error("Error saving uploaded image(s): {}", e.getMessage(), e);
-                throw new RuntimeException("Failed to save image: " + e.getMessage(), e);
-            }
-        }
+//        if (images != null && images.length > 0) {
+//            try {
+//                final int MAX_IMAGES = 5;
+//                Path uploadPath = Paths.get(uploadDir);
+//                Files.createDirectories(uploadPath); // Ensure directory exists
+//
+//                List<String> savedUrls = new java.util.ArrayList<>();
+//                int count = 0;
+//
+//                for (MultipartFile img : images) {
+//                    if (img == null || img.isEmpty()) continue;
+//                    if (count >= MAX_IMAGES) break;
+//
+//                    // Clean original filename
+//                    String original = img.getOriginalFilename();
+//                    String ext = "";
+//                    if (original != null && original.contains(".")) {
+//                        ext = original.substring(original.lastIndexOf("."));
+//                    }
+//
+//                    // Unique safe filename
+//                    String fileName = UUID.randomUUID().toString().replace("-", "") + ext;
+//                    Path filePath = uploadPath.resolve(fileName);
+//
+//                    // Save file safely (overwrite only same UUID, which never happens)
+//                    Files.copy(img.getInputStream(), filePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+//
+//                    log.info("Uploaded file: {} ({} bytes)", fileName, img.getSize());
+//
+//                    // Construct accessible URL
+//                    savedUrls.add("/uploads/items/" + fileName);
+//                    count++;
+//                }
+//
+//                if (!savedUrls.isEmpty()) {
+//                    item.setImageUrls(savedUrls);
+//                }
+//
+//            } catch (IOException e) {
+//                log.error("Error saving uploaded image(s): {}", e.getMessage(), e);
+//                throw new RuntimeException("Failed to save image: " + e.getMessage(), e);
+//            }
+//        }
 
         return itemRepo.save(item);
     }
@@ -149,7 +150,7 @@ public class ItemService {
         existingItem.setCity(request.getCity());
         existingItem.setPincode(request.getPincode());
         existingItem.setItemCondition(request.getCondition() != null ? request.getCondition() : "Not specified");
-        existingItem.setPrice(request.getPrice());
+        existingItem.setPrice(request.getPrice() != null ? request.getPrice() : existingItem.getPrice());
 
         // Add new image URL if provided
         if (request.getImageUrl() != null && !request.getImageUrl().isEmpty()) {

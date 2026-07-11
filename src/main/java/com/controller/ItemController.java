@@ -7,6 +7,7 @@ import com.dto.ItemResponseDto;
 import com.entity.Item;
 import com.entity.ItemType;
 import com.entity.enums.ItemStatus;
+import com.service.FileUploadService;
 import com.service.ItemService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +39,7 @@ import java.util.Map;
 public class ItemController {
 
     private final ItemService itemService;
+    private final FileUploadService fileUploadService;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("isAuthenticated()")
@@ -54,10 +57,12 @@ public class ItemController {
 
 
     ) {
-        log.info("Images received: {}", images.length);
-        for (MultipartFile img : images) {
-            System.out.println(" - " + img.getOriginalFilename());
+        if (images != null && images.length > 5) {
+            log.warn("User attempted to upload {} images.", images.length);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Collections.singletonMap("error", "You can upload a maximum of 5 images."));
         }
+
         try {
             // Get the authenticated user's email
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -91,13 +96,19 @@ public class ItemController {
                 request.setPrice(null);
             }
 
-            if (images != null) {
+            List<String> imageUrls = new ArrayList<>();
+            if (images != null && images.length > 0) {
+                log.info("Processing {} images for Cloudinary upload...", images.length);
                 for (MultipartFile image : images) {
-                    log.info("Uploaded file: {} ({} bytes)", image.getOriginalFilename(), image.getSize());
+                    if (!image.isEmpty()) {
+                        // Upload using your existing FileUploadService
+                        String secureUrl = fileUploadService.uploadFile(image);
+                        imageUrls.add(secureUrl);
+                    }
                 }
             }
 
-            Item item = itemService.addItem(request, images);
+            Item item = itemService.addItem(request, imageUrls);
             return new ResponseEntity<>(item, HttpStatus.CREATED);
 
         } catch (Exception e) {
