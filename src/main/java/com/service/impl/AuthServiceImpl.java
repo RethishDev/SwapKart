@@ -7,8 +7,9 @@ import com.dto.UserDto;
 import com.dto.RegisterResponse;
 import com.entity.User;
 import com.repository.UserRepository;
+import com.sendgrid.Request;
 import com.service.AuthService;
-import com.service.EmailOtpService;
+import com.service.EmailService;
 import com.service.JwtService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -26,6 +27,7 @@ import org.springframework.stereotype.Service;
 import com.entity.UserRole;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.util.Date;
 
 @Service
@@ -37,7 +39,7 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
-    private final JavaMailSender mailSender;
+    private final EmailService emailService;
 
     @Override
     public LoginResponse authenticate(LoginRequest loginRequest) {
@@ -148,27 +150,36 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void sendPasswordResetEmail(String email) {
-        log.info("sendingPassword");
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+        try {
+            log.info("Sending link");
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
 
-        String token = jwtService.generateToken(user.getEmail());
-        //String resetLink = "http://localhost:8081/reset-password?token=" + token;
+            String token = jwtService.generateToken(user.getEmail());
+            //String resetLink = "http://localhost:8081/reset-password?token=" + token;
 
-        // reset password link for dev tunnel - swapkart online
-        String resetLink = "https://swapkart-f1k7.onrender.com/reset-password?token=" + token;
+            // reset password link for dev tunnel - swapkart online
+            String resetLink = "https://swapkart-f1k7.onrender.com/reset-password?token=" + token;
 
-        String subject = "Password Reset Request";
-        String body = "Please click the link below to reset your password:\n\n" + resetLink;
+            String subject = "Password Reset Request";
+            String body = "Please click the link below to reset your password:\n\n" + resetLink;
 
+            String response = emailService.sendEmail(user.getEmail(), subject, body);
+            log.info("Email Service response: {}", response);
+        } catch (Exception e) {
+            log.error("SendPasswordResetEmail failed: {}", e.getMessage(), e);
+            throw new RuntimeException(e);
+        }
 
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom("swapkart@example.com");
-        message.setTo(user.getEmail());
-        message.setSubject(subject);
-        message.setText(body);
-
-        mailSender.send(message);
+//        SimpleMailMessage message = new SimpleMailMessage();
+//        message.setFrom("swapkart@example.com");
+//        message.setTo(user.getEmail());
+//        message.setSubject(subject);
+//        message.setText(body);
+//
+//        Request request = new Request();
+//
+//        mailSender.send(message);
     }
 
     @Override

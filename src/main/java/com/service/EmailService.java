@@ -18,7 +18,7 @@ import java.util.Random;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class EmailOtpService {
+public class EmailService {
 
     private final SendGrid sendGrid;
     private final Random random = new Random();
@@ -207,11 +207,19 @@ public class EmailOtpService {
                 "  </body>\n" +
                 "</html>\n";
 
+        String response = sendEmail(toEmail,subject,htmlContent);
+        log.info("Email Service response: {}",response);
+
+        return otp;
+    }
+
+    public String sendEmail(String toEmail, String subject, String body) throws IOException {
         log.info("Email initiated....");
+
         // Building the SendGrid Mail Request Object
         Email from = new Email(fromEmail);
         Email to = new Email(toEmail);
-        Content content = new Content("text/html", htmlContent); // Essential: flag it as text/html
+        Content content = new Content("text/html", body); // Essential: flag it as text/html
         Mail mail = new Mail(from, subject, to, content);
 
         Request request = new Request();
@@ -220,19 +228,18 @@ public class EmailOtpService {
             request.setMethod(Method.POST);
             request.setEndpoint("mail/send");
             request.setBody(mail.build());
-            
+
             Response response = sendGrid.api(request);
             log.info("SendGrid API Response Status Code: {}", response.getStatusCode());
-            
+
             if (response.getStatusCode() >= 400) {
                 log.error("SendGrid failed to dispatch email. Body: {}", response.getBody());
                 throw new IOException("Email delivery failure via SendGrid API");
             }
+            return request.getBody();
         } catch (IOException ex) {
             log.error("Exception thrown while connecting to SendGrid API", ex);
             throw ex;
         }
-
-        return otp;
     }
 }

@@ -1,6 +1,6 @@
 package com.controller;
 
-import com.service.EmailOtpService;
+import com.service.EmailService;
 import jakarta.mail.MessagingException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -15,11 +15,11 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class EmailOtpController {
 
-    private final EmailOtpService emailOtpService;
+    private final EmailService emailService;
     private final Map<String, String> otpStorage = new ConcurrentHashMap<>();
 
-    public EmailOtpController(EmailOtpService emailOtpService) {
-        this.emailOtpService = emailOtpService;
+    public EmailOtpController(EmailService emailService) {
+        this.emailService = emailService;
     }
 
     // Send OTP (accepts both JSON body or form params)
@@ -38,7 +38,7 @@ public class EmailOtpController {
         // Get name from request or use email's local part as fallback
         String username = (body != null && body.containsKey("name")) ? body.get("name") : email.split("@")[0];
 
-        String otp = emailOtpService.sendOtp(email, username);
+        String otp = emailService.sendOtp(email, username);
         otpStorage.put(email, otp);
 
         log.info("OTP sent successfully to {}", email);
