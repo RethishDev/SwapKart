@@ -94,6 +94,31 @@ async function handleLogin(email, password) {
   }
 }
 
+// Helper function to check if the JWT token is expired
+function isTokenExpired(token) {
+    if (!token) return true;
+    try {
+        // A JWT token has 3 parts separated by dots: header.payload.signature
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        
+        // Decode base64 payload
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+
+        const payload = JSON.parse(jsonPayload);
+        
+        // payload.exp is in seconds, Date.now() is in milliseconds
+        const currentTime = Math.floor(Date.now() / 1000);
+        
+        return payload.exp < currentTime;
+    } catch (error) {
+        console.error("Error decoding token", error);
+        return true; // Treat as expired if we can't parse it
+    }
+}
+
 // Redirect helper
 function redirectToDashboard(role) {
   if (role === 'ROLE_ADMIN') {
@@ -164,8 +189,28 @@ document.addEventListener('DOMContentLoaded', function() {
   const role = localStorage.getItem('role');
   const currentPath = window.location.pathname;
 
-  // Redirect only if on login page and already logged in
-  if (token && role && currentPath.endsWith('login.html')) {
-    redirectToDashboard(role);
+  if (token) {
+    // 1. Check if the token is expired
+    if (isTokenExpired(token)) {
+      console.log('Token expired. Clearing local storage.');
+      // Clear all stale user data so they are forced to log in again
+      localStorage.removeItem('token');
+      localStorage.removeItem('role');
+      localStorage.removeItem('username');
+      localStorage.removeItem('userId');
+      
+      // Optionally show a message on the login screen
+      if (currentPath.endsWith('login.html')) {
+          const errorMessage = document.getElementById('error-message');
+          if(errorMessage) {
+              errorMessage.textContent = 'Your session has expired. Please login again.';
+              errorMessage.style.display = 'block';
+          }
+      }
+    } 
+    // 2. Token is VALID. Redirect them if they are on the login page or index page
+    else if (role && (currentPath.endsWith('login.html') || currentPath === '/' || currentPath.endsWith('index.html'))) {
+      redirectToDashboard(role);
+    }
   }
 });
