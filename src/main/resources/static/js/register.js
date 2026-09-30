@@ -90,10 +90,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
       if (!isValid) return;
 
-      if (!isOtpVerified) {
-        showError('emailError', 'Please verify your email OTP before registering.');
-        return;
-      }
+      // if (!isOtpVerified) {
+      //   showError('emailError', 'Please verify your email OTP before registering.');
+      //   return;
+      // }
 
 
       try {
@@ -203,7 +203,8 @@ document.addEventListener('DOMContentLoaded', function () {
           emailInput.readOnly = true;        // Optional: lock email field
         } else {
           const errorText = await response.text();
-          alert("Failed to send OTP: " + errorText);
+          console.log("Failed to send OTP: " + errorText);
+          alert("Sorry! We are currently facing an issue, Please proceed.");
         }
       } catch (error) {
         console.error("Error sending OTP:", error);
@@ -215,48 +216,48 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
 
-    // Verify OTP
-    verifyOtpBtn.addEventListener("click", async () => {
-      const email = emailInput.value.trim();
-      const otp = document.getElementById("otp").value.trim();
+    // // Verify OTP
+    // verifyOtpBtn.addEventListener("click", async () => {
+    //   const email = emailInput.value.trim();
+    //   const otp = document.getElementById("otp").value.trim();
 
-      if (!otp) {
-        otpError.textContent = "Please enter OTP";
-        otpError.style.display = "block";
-        return;
-      }
+    //   if (!otp) {
+    //     otpError.textContent = "Please enter OTP";
+    //     otpError.style.display = "block";
+    //     return;
+    //   }
 
-      otpError.style.display = "none";
+    //   otpError.style.display = "none";
 
-      try {
-        const response = await fetch("/api/email/verify-otp", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, otp })
-        });
+    //   try {
+    //     const response = await fetch("/api/email/verify-otp", {
+    //       method: "POST",
+    //       headers: { "Content-Type": "application/json" },
+    //       body: JSON.stringify({ email, otp })
+    //     });
 
-        const message = await response.text();
-        if (response.ok) {
-          alert("✅ OTP Verified Successfully!");
-          otpGroup.style.display = "none";
-          isOtpVerified = true; // Mark verification success
+    //     const message = await response.text();
+    //     if (response.ok) {
+    //       alert("✅ OTP Verified Successfully!");
+    //       otpGroup.style.display = "none";
+    //       isOtpVerified = true; // Mark verification success
 
-          // Optional visual feedback
-          const emailStatus = document.createElement("span");
-          emailStatus.textContent = "✅ Email Verified";
-          emailStatus.style.color = "#28a745";
-          emailInput.parentNode.appendChild(emailStatus);
+    //       // Optional visual feedback
+    //       const emailStatus = document.createElement("span");
+    //       emailStatus.textContent = "✅ Email Verified";
+    //       emailStatus.style.color = "#28a745";
+    //       emailInput.parentNode.appendChild(emailStatus);
 
-        } else {
-          otpError.textContent = message;
-          otpError.style.display = "block";
-        }
-      } catch (error) {
-        console.error("Error verifying OTP:", error);
-        otpError.textContent = "Server error. Try again later.";
-        otpError.style.display = "block";
-      }
-    });
+    //     } else {
+    //       otpError.textContent = message;
+    //       otpError.style.display = "block";
+    //     }
+    //   } catch (error) {
+    //     console.error("Error verifying OTP:", error);
+    //     otpError.textContent = "Server error. Try again later.";
+    //     otpError.style.display = "block";
+    //   }
+    // });
 
 
     // Email validation and Send OTP button control
