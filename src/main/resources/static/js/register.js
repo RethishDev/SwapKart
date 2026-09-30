@@ -204,7 +204,7 @@ document.addEventListener('DOMContentLoaded', function () {
         } else {
           const errorText = await response.text();
           console.log("Failed to send OTP: " + errorText);
-          alert("Sorry! We are currently facing an issue, Please proceed.");
+          alert("Sorry! We are currently facing an issue, Please proceed without otp verification.");
         }
       } catch (error) {
         console.error("Error sending OTP:", error);
